@@ -25,7 +25,7 @@ use turbopack_core::{
         origin::{ResolveOrigin, ResolveOriginVc},
         parse::RequestVc,
     },
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 use turbopack_ecmascript::{
     chunk::{
@@ -63,12 +63,15 @@ impl ModuleCssAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for ModuleCssAsset {
+impl Module for ModuleCssAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for ModuleCssAsset {
     #[turbo_tasks::function]
     fn content(&self) -> Result<AssetContentVc> {
         bail!("CSS module asset has no contents")
@@ -203,9 +206,6 @@ impl ModuleCssAssetVc {
         Ok(AssetReferencesVc::cell(references))
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for ModuleCssAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for ModuleCssAsset {

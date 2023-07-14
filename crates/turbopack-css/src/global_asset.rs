@@ -8,7 +8,7 @@ use turbopack_core::{
     module::{Module, ModuleVc},
     reference::AssetReferencesVc,
     reference_type::{CssReferenceSubType, ReferenceType},
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 use crate::references::internal::InternalCssAssetReferenceVc;
@@ -46,12 +46,15 @@ impl GlobalCssAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for GlobalCssAsset {
+impl Module for GlobalCssAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for GlobalCssAsset {
     #[turbo_tasks::function]
     fn content(&self) -> Result<AssetContentVc> {
         bail!("CSS global asset has no contents")
@@ -64,9 +67,6 @@ impl Asset for GlobalCssAsset {
         ])
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for GlobalCssAsset {}
 
 #[turbo_tasks::function]
 fn modifier() -> StringVc {

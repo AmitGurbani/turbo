@@ -16,6 +16,7 @@ use turbopack_core::{
     asset::{Asset, AssetContentVc},
     chunk::{ChunkingContextVc, EvaluatableAssetVc, EvaluatableAssetsVc},
     error::PrettyPrintError,
+    module::Module,
 };
 use turbopack_dev_server::{
     html::DevHtmlAssetVc,

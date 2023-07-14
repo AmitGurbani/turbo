@@ -28,20 +28,21 @@ use turbo_tasks::{
 };
 use turbo_tasks_fs::FileSystemPathVc;
 use turbopack_core::{
-    asset::{Asset, AssetVc},
+    asset::Asset,
     compile_time_info::CompileTimeInfoVc,
     context::{AssetContext, AssetContextVc},
     ident::AssetIdentVc,
     issue::{Issue, IssueVc},
     module::ModuleVc,
+    output::{OutputAsset, OutputAssetVc},
     raw_module::RawModuleVc,
-    reference::all_referenced_assets,
+    reference::all_referenced_output_assets,
     reference_type::{EcmaScriptModulesReferenceSubType, InnerAssetsVc, ReferenceType},
     resolve::{
         options::ResolveOptionsVc, origin::PlainResolveOriginVc, parse::RequestVc, resolve,
         ModulePartVc, ResolveResultVc,
     },
-    source::{asset_to_source, SourceVc},
+    source::{asset_to_source, Source, SourceVc},
 };
 
 use crate::transition::Transition;
@@ -506,12 +507,18 @@ impl AssetContext for ModuleAssetContext {
 }
 
 #[turbo_tasks::function]
-pub async fn emit_with_completion(asset: AssetVc, output_dir: FileSystemPathVc) -> CompletionVc {
+pub async fn emit_with_completion(
+    asset: OutputAssetVc,
+    output_dir: FileSystemPathVc,
+) -> CompletionVc {
     emit_assets_aggregated(asset, output_dir)
 }
 
 #[turbo_tasks::function]
-async fn emit_assets_aggregated(asset: AssetVc, output_dir: FileSystemPathVc) -> CompletionVc {
+async fn emit_assets_aggregated(
+    asset: OutputAssetVc,
+    output_dir: FileSystemPathVc,
+) -> CompletionVc {
     let aggregated = aggregate(asset);
     emit_aggregated_assets(aggregated, output_dir)
 }
@@ -533,13 +540,13 @@ async fn emit_aggregated_assets(
 }
 
 #[turbo_tasks::function]
-pub async fn emit_asset(asset: AssetVc) -> CompletionVc {
+pub async fn emit_asset(asset: OutputAssetVc) -> CompletionVc {
     asset.content().write(asset.ident().path())
 }
 
 #[turbo_tasks::function]
 pub async fn emit_asset_into_dir(
-    asset: AssetVc,
+    asset: OutputAssetVc,
     output_dir: FileSystemPathVc,
 ) -> Result<CompletionVc> {
     let dir = &*output_dir.await?;
@@ -552,21 +559,21 @@ pub async fn emit_asset_into_dir(
 
 #[turbo_tasks::value(shared)]
 struct ReferencesList {
-    referenced_by: HashMap<AssetVc, HashSet<AssetVc>>,
+    referenced_by: HashMap<OutputAssetVc, HashSet<OutputAssetVc>>,
 }
 
 #[turbo_tasks::function]
 async fn compute_back_references(aggregated: AggregatedGraphVc) -> Result<ReferencesListVc> {
     Ok(match &*aggregated.content().await? {
-        AggregatedGraphNodeContent::Asset(asset) => {
+        &AggregatedGraphNodeContent::Asset(asset) => {
             let mut referenced_by = HashMap::new();
-            for reference in all_referenced_assets(*asset).await?.iter() {
-                referenced_by.insert(*reference, [*asset].into_iter().collect());
+            for reference in all_referenced_output_assets(asset).await?.iter() {
+                referenced_by.insert(*reference, [asset].into_iter().collect());
             }
             ReferencesList { referenced_by }.into()
         }
         AggregatedGraphNodeContent::Children(children) => {
-            let mut referenced_by = HashMap::<AssetVc, HashSet<AssetVc>>::new();
+            let mut referenced_by = HashMap::<OutputAssetVc, HashSet<OutputAssetVc>>::new();
             let lists = children
                 .iter()
                 .map(|child| compute_back_references(*child))
@@ -591,7 +598,7 @@ async fn compute_back_references(aggregated: AggregatedGraphVc) -> Result<Refere
 async fn top_references(list: ReferencesListVc) -> Result<ReferencesListVc> {
     let list = list.await?;
     const N: usize = 5;
-    let mut top = Vec::<(&AssetVc, &HashSet<AssetVc>)>::new();
+    let mut top = Vec::<(&OutputAssetVc, &HashSet<OutputAssetVc>)>::new();
     for tuple in list.referenced_by.iter() {
         let mut current = tuple;
         for item in &mut top {

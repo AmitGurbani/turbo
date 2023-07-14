@@ -15,7 +15,7 @@ use turbopack_core::{
     module::{Module, ModuleVc},
     reference::AssetReferencesVc,
     resolve::origin::{ResolveOrigin, ResolveOriginVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
     virtual_source::VirtualSourceVc,
 };
 use turbopack_ecmascript::{
@@ -166,12 +166,15 @@ impl MdxModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for MdxModuleAsset {
+impl Module for MdxModuleAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for MdxModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
@@ -182,9 +185,6 @@ impl Asset for MdxModuleAsset {
         Ok(self_vc.failsafe_analyze().await?.references)
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for MdxModuleAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for MdxModuleAsset {

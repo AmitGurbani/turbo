@@ -29,7 +29,7 @@ use turbopack_core::{
         pattern::{Pattern, QueryMapVc},
         resolve, AliasPattern, ResolveResultVc,
     },
-    source::{option_asset_to_source, OptionSourceVc, SourceVc},
+    source::{option_asset_to_source, OptionSourceVc, Source, SourceVc},
 };
 
 #[turbo_tasks::value(shared)]

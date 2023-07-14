@@ -36,9 +36,9 @@ pub use self::{
     passthrough_asset::{PassthroughAsset, PassthroughAssetVc},
 };
 use crate::{
-    asset::{Asset, AssetVc, AssetsVc},
+    asset::{Asset, AssetVc},
     ident::AssetIdentVc,
-    module::{Module, ModuleVc},
+    module::{Module, ModuleVc, ModulesVc},
     output::OutputAssetsVc,
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
     resolve::{PrimaryResolveResult, ResolveResult, ResolveResultVc},
@@ -118,6 +118,7 @@ impl ChunksVc {
 /// It usually contains multiple chunk items.
 #[turbo_tasks::value_trait]
 pub trait Chunk: Asset {
+    fn ident(&self) -> AssetIdentVc;
     fn chunking_context(&self) -> ChunkingContextVc;
     // TODO Once output assets have their own trait, this path() method will move
     // into that trait and ident() will be removed from that. Assets on the
@@ -143,7 +144,7 @@ pub struct OutputChunkRuntimeInfo {
     /// List of paths of chunks containing individual modules that are part of
     /// this chunk. This is useful for selectively loading modules from a chunk
     /// without loading the whole chunk.
-    pub module_chunks: Option<AssetsVc>,
+    pub module_chunks: Option<OutputAssetsVc>,
     pub placeholder_for_future_extensions: (),
 }
 
@@ -244,18 +245,18 @@ pub struct ChunkContentResult<I> {
 
 #[async_trait::async_trait]
 pub trait FromChunkableModule: ChunkItem + Sized + Debug {
-    async fn from_asset(context: ChunkingContextVc, asset: AssetVc) -> Result<Option<Self>>;
+    async fn from_asset(context: ChunkingContextVc, module: ModuleVc) -> Result<Option<Self>>;
     async fn from_async_asset(
         context: ChunkingContextVc,
-        asset: ChunkableModuleVc,
+        module: ChunkableModuleVc,
         availability_info: Value<AvailabilityInfo>,
     ) -> Result<Option<Self>>;
 }
 
 pub async fn chunk_content_split<I>(
     context: ChunkingContextVc,
-    entry: AssetVc,
-    additional_entries: Option<AssetsVc>,
+    entry: ModuleVc,
+    additional_entries: Option<ModulesVc>,
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<ChunkContentResult<I>>
 where
@@ -268,8 +269,8 @@ where
 
 pub async fn chunk_content<I>(
     context: ChunkingContextVc,
-    entry: AssetVc,
-    additional_entries: Option<AssetsVc>,
+    entry: ModuleVc,
+    additional_entries: Option<ModulesVc>,
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<Option<ChunkContentResult<I>>>
 where
@@ -283,11 +284,11 @@ where
 enum ChunkContentGraphNode<I> {
     // An asset not placed in the current chunk, but whose references we will
     // follow to find more graph nodes.
-    PassthroughAsset { asset: AssetVc },
+    PassthroughAsset { asset: ModuleVc },
     // Chunk items that are placed into the current chunk
     ChunkItem { item: I, ident: StringReadRef },
     // Asset that is already available and doesn't need to be included
-    AvailableAsset(AssetVc),
+    AvailableAsset(ModuleVc),
     // Chunks that are loaded in parallel to the current chunk
     Chunk(ChunkVc),
     ExternalAssetReference(AssetReferenceVc),
@@ -296,7 +297,7 @@ enum ChunkContentGraphNode<I> {
 #[derive(Clone, Copy)]
 struct ChunkContentContext {
     chunking_context: ChunkingContextVc,
-    entry: AssetVc,
+    entry: ModuleVc,
     availability_info: Value<AvailabilityInfo>,
     split: bool,
 }
@@ -304,7 +305,7 @@ struct ChunkContentContext {
 async fn reference_to_graph_nodes<I>(
     context: ChunkContentContext,
     reference: AssetReferenceVc,
-) -> Result<Vec<(Option<(AssetVc, ChunkingType)>, ChunkContentGraphNode<I>)>>
+) -> Result<Vec<(Option<(ModuleVc, ChunkingType)>, ChunkContentGraphNode<I>)>>
 where
     I: FromChunkableModule + Eq + std::hash::Hash + Clone,
 {
@@ -338,6 +339,10 @@ where
     let mut graph_nodes = vec![];
 
     for asset in assets {
+        let asset = asset.resolve().await?;
+        let Some(asset) = ModuleVc::resolve_from(asset).await? else {
+            continue;
+        };
         if let Some(available_assets) = context.availability_info.available_assets() {
             if *available_assets.includes(asset).await? {
                 graph_nodes.push((
@@ -460,12 +465,12 @@ const MAX_CHUNK_ITEMS_COUNT: usize = 5000;
 struct ChunkContentVisit<I> {
     context: ChunkContentContext,
     chunk_items_count: usize,
-    processed_assets: HashSet<(ChunkingType, AssetVc)>,
+    processed_assets: HashSet<(ChunkingType, ModuleVc)>,
     _phantom: PhantomData<I>,
 }
 
 type ChunkItemToGraphNodesEdges<I> =
-    impl Iterator<Item = (Option<(AssetVc, ChunkingType)>, ChunkContentGraphNode<I>)>;
+    impl Iterator<Item = (Option<(ModuleVc, ChunkingType)>, ChunkContentGraphNode<I>)>;
 
 type ChunkItemToGraphNodesFuture<I: FromChunkableModule + Eq + std::hash::Hash + Clone> =
     impl Future<Output = Result<ChunkItemToGraphNodesEdges<I>>>;
@@ -474,13 +479,13 @@ impl<I> Visit<ChunkContentGraphNode<I>, ()> for ChunkContentVisit<I>
 where
     I: FromChunkableModule + Eq + std::hash::Hash + Clone,
 {
-    type Edge = (Option<(AssetVc, ChunkingType)>, ChunkContentGraphNode<I>);
+    type Edge = (Option<(ModuleVc, ChunkingType)>, ChunkContentGraphNode<I>);
     type EdgesIntoIter = ChunkItemToGraphNodesEdges<I>;
     type EdgesFuture = ChunkItemToGraphNodesFuture<I>;
 
     fn visit(
         &mut self,
-        (option_key, node): (Option<(AssetVc, ChunkingType)>, ChunkContentGraphNode<I>),
+        (option_key, node): (Option<(ModuleVc, ChunkingType)>, ChunkContentGraphNode<I>),
     ) -> VisitControlFlow<ChunkContentGraphNode<I>, ()> {
         let Some((asset, chunking_type)) = option_key else {
             return VisitControlFlow::Continue(node);
@@ -541,8 +546,8 @@ where
 
 async fn chunk_content_internal_parallel<I>(
     chunking_context: ChunkingContextVc,
-    entry: AssetVc,
-    additional_entries: Option<AssetsVc>,
+    entry: ModuleVc,
+    additional_entries: Option<ModulesVc>,
     availability_info: Value<AvailabilityInfo>,
     split: bool,
 ) -> Result<Option<ChunkContentResult<I>>>

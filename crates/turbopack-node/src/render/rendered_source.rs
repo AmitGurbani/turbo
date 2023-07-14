@@ -2,16 +2,18 @@ use anyhow::{anyhow, Result};
 use indexmap::IndexSet;
 use turbo_tasks::{
     primitives::{JsonValueVc, StringVc},
-    Value,
+    TryJoinIterExt, Value,
 };
 use turbo_tasks_env::ProcessEnvVc;
 use turbo_tasks_fs::FileSystemPathVc;
 use turbopack_core::{
-    asset::{Asset, AssetsSetVc},
+    asset::Asset,
     introspect::{
         asset::IntrospectableAssetVc, Introspectable, IntrospectableChildrenVc, IntrospectableVc,
     },
     issue::IssueContextExt,
+    module::Module,
+    output::{OutputAssetVc, OutputAssetsSetVc},
     reference::AssetReference,
     resolve::PrimaryResolveResult,
 };
@@ -128,7 +130,12 @@ impl GetContentSource for NodeRenderContentSource {
                         } else {
                             None
                         }
-                    }),
+                    })
+                    .map(|asset| async move { Ok(OutputAssetVc::resolve_from(asset).await?) })
+                    .try_join()
+                    .await?
+                    .into_iter()
+                    .flatten(),
             )
         }
         for &entry in entries.await?.iter() {
@@ -145,10 +152,11 @@ impl GetContentSource for NodeRenderContentSource {
                 .copied(),
             )
         }
-        Ok(
-            AssetGraphContentSourceVc::new_lazy_multiple(self.server_root, AssetsSetVc::cell(set))
-                .into(),
+        Ok(AssetGraphContentSourceVc::new_lazy_multiple(
+            self.server_root,
+            OutputAssetsSetVc::cell(set),
         )
+        .into())
     }
 }
 
@@ -294,11 +302,14 @@ impl Introspectable for NodeRenderContentSource {
             ));
             set.insert((
                 StringVc::cell("intermediate asset".to_string()),
-                IntrospectableAssetVc::new(get_intermediate_asset(
-                    entry.chunking_context,
-                    entry.module,
-                    entry.runtime_entries,
-                )),
+                IntrospectableAssetVc::new(
+                    get_intermediate_asset(
+                        entry.chunking_context,
+                        entry.module,
+                        entry.runtime_entries,
+                    )
+                    .into(),
+                ),
             ));
         }
         Ok(IntrospectableChildrenVc::cell(set))

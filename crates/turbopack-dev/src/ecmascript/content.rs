@@ -4,9 +4,10 @@ use anyhow::{bail, Result};
 use indoc::writedoc;
 use turbo_tasks_fs::File;
 use turbopack_core::{
-    asset::{Asset, AssetContentVc},
+    asset::AssetContentVc,
     chunk::{ChunkingContext, ModuleId},
     code_builder::{CodeBuilder, CodeVc},
+    output::OutputAsset,
     source_map::{GenerateSourceMap, GenerateSourceMapVc, OptionSourceMapVc},
     version::{
         MergeableVersionedContent, MergeableVersionedContentVc, UpdateVc, VersionVc,

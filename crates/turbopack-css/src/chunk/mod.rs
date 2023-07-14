@@ -9,7 +9,7 @@ use indexmap::IndexSet;
 use turbo_tasks::{primitives::StringVc, TryJoinIterExt, Value, ValueToString};
 use turbo_tasks_fs::{rope::Rope, File, FileSystemPathOptionVc};
 use turbopack_core::{
-    asset::{Asset, AssetContentVc, AssetVc, AssetsVc},
+    asset::{Asset, AssetContentVc, AssetVc},
     chunk::{
         availability_info::AvailabilityInfo, chunk_content, chunk_content_split, Chunk,
         ChunkContentResult, ChunkItem, ChunkItemVc, ChunkVc, ChunkableModule, ChunkableModuleVc,
@@ -23,7 +23,7 @@ use turbopack_core::{
         Introspectable, IntrospectableChildrenVc, IntrospectableVc,
     },
     module::{Module, ModuleVc},
-    output::{OutputAsset, OutputAssetVc},
+    output::{OutputAsset, OutputAssetVc, OutputAssetsVc},
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
     resolve::PrimaryResolveResult,
     source_map::{GenerateSourceMap, GenerateSourceMapVc, OptionSourceMapVc},
@@ -263,7 +263,7 @@ async fn css_chunk_content_single_entry(
     entry: CssChunkPlaceableVc,
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<CssChunkContentResultVc> {
-    let asset = entry.as_asset();
+    let asset = entry.as_module();
     let res = if let Some(res) =
         chunk_content::<CssChunkItemVc>(context, asset, None, availability_info).await?
     {
@@ -277,6 +277,11 @@ async fn css_chunk_content_single_entry(
 
 #[turbo_tasks::value_impl]
 impl Chunk for CssChunk {
+    #[turbo_tasks::function]
+    fn ident(self_vc: CssChunkVc) -> AssetIdentVc {
+        self_vc.as_chunk().ident()
+    }
+
     #[turbo_tasks::function]
     fn chunking_context(&self) -> ChunkingContextVc {
         self.context
@@ -348,7 +353,7 @@ impl OutputChunk for CssChunk {
             .collect();
         Ok(OutputChunkRuntimeInfo {
             included_ids: Some(ModuleIdsVc::cell(included_ids)),
-            module_chunks: Some(AssetsVc::cell(module_chunks)),
+            module_chunks: Some(OutputAssetsVc::cell(module_chunks)),
             ..Default::default()
         }
         .cell())
@@ -356,10 +361,7 @@ impl OutputChunk for CssChunk {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for CssChunk {}
-
-#[turbo_tasks::value_impl]
-impl Asset for CssChunk {
+impl OutputAsset for CssChunk {
     #[turbo_tasks::function]
     async fn ident(self_vc: CssChunkVc) -> Result<AssetIdentVc> {
         let this = self_vc.await?;
@@ -389,7 +391,10 @@ impl Asset for CssChunk {
             this.context.chunk_path(ident, ".css"),
         ))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for CssChunk {
     #[turbo_tasks::function]
     fn content(self_vc: CssChunkVc) -> AssetContentVc {
         self_vc.chunk_content().content()
@@ -495,8 +500,8 @@ pub trait CssChunkItem: ChunkItem {
 
 #[async_trait::async_trait]
 impl FromChunkableModule for CssChunkItemVc {
-    async fn from_asset(context: ChunkingContextVc, asset: AssetVc) -> Result<Option<Self>> {
-        if let Some(placeable) = CssChunkPlaceableVc::resolve_from(asset).await? {
+    async fn from_asset(context: ChunkingContextVc, module: ModuleVc) -> Result<Option<Self>> {
+        if let Some(placeable) = CssChunkPlaceableVc::resolve_from(module).await? {
             return Ok(Some(placeable.as_chunk_item(context)));
         }
         Ok(None)
@@ -504,7 +509,7 @@ impl FromChunkableModule for CssChunkItemVc {
 
     async fn from_async_asset(
         _context: ChunkingContextVc,
-        _asset: ChunkableModuleVc,
+        _module: ChunkableModuleVc,
         _availability_info: Value<AvailabilityInfo>,
     ) -> Result<Option<Self>> {
         Ok(None)

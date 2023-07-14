@@ -4,9 +4,9 @@ use anyhow::{anyhow, Result};
 use indoc::writedoc;
 use turbo_tasks::{primitives::StringVc, TryJoinIterExt};
 use turbopack_core::{
-    asset::Asset,
     chunk::{ChunkDataVc, ChunkItem, ChunkItemVc, ChunkingContext, ChunksDataVc},
     ident::AssetIdentVc,
+    module::Module,
     reference::{AssetReferencesVc, SingleAssetReferenceVc},
 };
 

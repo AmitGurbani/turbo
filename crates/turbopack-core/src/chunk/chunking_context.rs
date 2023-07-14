@@ -6,7 +6,10 @@ use turbo_tasks_fs::FileSystemPathVc;
 
 use super::{ChunkVc, EvaluatableAssetsVc};
 use crate::{
-    asset::AssetVc, environment::EnvironmentVc, ident::AssetIdentVc, output::OutputAssetsVc,
+    environment::EnvironmentVc,
+    ident::AssetIdentVc,
+    module::ModuleVc,
+    output::{OutputAssetVc, OutputAssetsVc},
 };
 
 /// A context for the chunking that influences the way chunks are created
@@ -27,9 +30,9 @@ pub trait ChunkingContext {
 
     // TODO(alexkirsz) Remove this from the chunking context.
     /// Reference Source Map Assets for chunks
-    fn reference_chunk_source_maps(&self, chunk: AssetVc) -> BoolVc;
+    fn reference_chunk_source_maps(&self, chunk: OutputAssetVc) -> BoolVc;
 
-    fn can_be_in_same_chunk(&self, asset_a: AssetVc, asset_b: AssetVc) -> BoolVc;
+    fn can_be_in_same_chunk(&self, asset_a: ModuleVc, asset_b: ModuleVc) -> BoolVc;
 
     fn asset_path(
         &self,

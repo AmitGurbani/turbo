@@ -17,14 +17,16 @@ use turbo_tasks::{
 use turbo_tasks_env::{ProcessEnv, ProcessEnvVc};
 use turbo_tasks_fs::{to_sys_path, File, FileContent, FileSystemPathVc};
 use turbopack_core::{
-    asset::{Asset, AssetVc, AssetsSetVc},
+    asset::Asset,
     chunk::{
         ChunkableModule, ChunkingContext, ChunkingContextVc, EvaluatableAssetVc,
         EvaluatableAssetsVc,
     },
-    reference::primary_referenced_assets,
+    module::Module,
+    output::{OutputAsset, OutputAssetVc, OutputAssetsSetVc},
+    reference::primary_referenced_output_assets,
     source_map::GenerateSourceMapVc,
-    virtual_source::VirtualSourceVc,
+    virtual_output::VirtualOutputAssetVc,
 };
 
 use self::{
@@ -47,7 +49,7 @@ pub mod transforms;
 
 #[turbo_tasks::function]
 async fn emit(
-    intermediate_asset: AssetVc,
+    intermediate_asset: OutputAssetVc,
     intermediate_output_path: FileSystemPathVc,
 ) -> Result<CompletionVc> {
     Ok(CompletionsVc::cell(
@@ -66,8 +68,8 @@ async fn emit(
 #[derive(Debug)]
 #[turbo_tasks::value]
 struct SeparatedAssets {
-    internal_assets: AssetsSetVc,
-    external_asset_entrypoints: AssetsSetVc,
+    internal_assets: OutputAssetsSetVc,
+    external_asset_entrypoints: OutputAssetsSetVc,
 }
 
 /// Extracts the subgraph of "internal" assets (assets within the passes
@@ -75,9 +77,9 @@ struct SeparatedAssets {
 /// "internal" subgraph.
 #[turbo_tasks::function]
 async fn internal_assets(
-    intermediate_asset: AssetVc,
+    intermediate_asset: OutputAssetVc,
     intermediate_output_path: FileSystemPathVc,
-) -> Result<AssetsSetVc> {
+) -> Result<OutputAssetsSetVc> {
     Ok(
         separate_assets(intermediate_asset, intermediate_output_path)
             .strongly_consistent()
@@ -93,7 +95,7 @@ pub struct AssetsForSourceMapping(HashMap<String, GenerateSourceMapVc>);
 /// the [GenerateSourceMap] trait.
 #[turbo_tasks::function]
 async fn internal_assets_for_source_mapping(
-    intermediate_asset: AssetVc,
+    intermediate_asset: OutputAssetVc,
     intermediate_output_path: FileSystemPathVc,
 ) -> Result<AssetsForSourceMappingVc> {
     let internal_assets = internal_assets(intermediate_asset, intermediate_output_path).await?;
@@ -120,7 +122,7 @@ pub async fn external_asset_entrypoints(
     runtime_entries: EvaluatableAssetsVc,
     chunking_context: ChunkingContextVc,
     intermediate_output_path: FileSystemPathVc,
-) -> Result<AssetsSetVc> {
+) -> Result<OutputAssetsSetVc> {
     Ok(separate_assets(
         get_intermediate_asset(chunking_context, module, runtime_entries)
             .resolve()
@@ -136,20 +138,20 @@ pub async fn external_asset_entrypoints(
 /// assets.
 #[turbo_tasks::function]
 async fn separate_assets(
-    intermediate_asset: AssetVc,
+    intermediate_asset: OutputAssetVc,
     intermediate_output_path: FileSystemPathVc,
 ) -> Result<SeparatedAssetsVc> {
     let intermediate_output_path = &*intermediate_output_path.await?;
     #[derive(PartialEq, Eq, Hash, Clone, Copy)]
     enum Type {
-        Internal(AssetVc),
-        External(AssetVc),
+        Internal(OutputAssetVc),
+        External(OutputAssetVc),
     }
     let get_asset_children = |asset| async move {
         let Type::Internal(asset) = asset else {
             return Ok(Vec::new());
         };
-        primary_referenced_assets(asset)
+        primary_referenced_output_assets(asset)
             .await?
             .iter()
             .map(|asset| async {
@@ -194,8 +196,8 @@ async fn separate_assets(
     }
 
     Ok(SeparatedAssets {
-        internal_assets: AssetsSetVc::cell(internal_assets),
-        external_asset_entrypoints: AssetsSetVc::cell(external_asset_entrypoints),
+        internal_assets: OutputAssetsSetVc::cell(internal_assets),
+        external_asset_entrypoints: OutputAssetsSetVc::cell(external_asset_entrypoints),
     }
     .cell())
 }
@@ -205,7 +207,7 @@ async fn separate_assets(
 /// ESM, for example.
 fn emit_package_json(dir: FileSystemPathVc) -> CompletionVc {
     emit(
-        VirtualSourceVc::new(
+        VirtualOutputAssetVc::new(
             dir.join("package.json"),
             FileContent::Content(File::from("{\"type\": \"commonjs\"}")).into(),
         )
@@ -219,7 +221,7 @@ fn emit_package_json(dir: FileSystemPathVc) -> CompletionVc {
 pub async fn get_renderer_pool(
     cwd: FileSystemPathVc,
     env: ProcessEnvVc,
-    intermediate_asset: AssetVc,
+    intermediate_asset: OutputAssetVc,
     intermediate_output_path: FileSystemPathVc,
     output_root: FileSystemPathVc,
     project_dir: FileSystemPathVc,
@@ -270,7 +272,7 @@ pub async fn get_intermediate_asset(
     chunking_context: ChunkingContextVc,
     main_entry: EvaluatableAssetVc,
     other_entries: EvaluatableAssetsVc,
-) -> Result<AssetVc> {
+) -> Result<OutputAssetVc> {
     Ok(NodeJsBootstrapAsset {
         path: chunking_context.chunk_path(main_entry.ident(), ".js"),
         chunking_context,

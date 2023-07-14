@@ -7,9 +7,8 @@ use swc_core::common::{
 };
 use turbo_tasks::primitives::StringVc;
 use turbopack_core::{
-    asset::Asset,
     issue::{analyze::AnalyzeIssue, IssueSeverity, IssueSourceVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 pub struct IssueEmitter {

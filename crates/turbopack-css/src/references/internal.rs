@@ -1,9 +1,8 @@
 use anyhow::Result;
 use turbo_tasks::{primitives::StringVc, ValueToString, ValueToStringVc};
 use turbopack_core::{
-    asset::Asset,
     chunk::{ChunkableModuleReference, ChunkableModuleReferenceVc},
-    module::ModuleVc,
+    module::{Module, ModuleVc},
     reference::{AssetReference, AssetReferenceVc},
     resolve::{ResolveResult, ResolveResultVc},
 };

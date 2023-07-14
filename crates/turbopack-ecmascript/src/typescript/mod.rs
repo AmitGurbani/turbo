@@ -9,13 +9,14 @@ use turbopack_core::{
     asset::{Asset, AssetContentVc, AssetVc},
     ident::AssetIdentVc,
     issue::{IssueSeverity, OptionIssueSourceVc},
+    module::{Module, ModuleVc},
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
     reference_type::{CommonJsReferenceSubType, ReferenceType},
     resolve::{
         origin::ResolveOriginVc, parse::RequestVc, pattern::QueryMapVc, ResolveResult,
         ResolveResultVc,
     },
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 use self::resolve::{read_from_tsconfigs, read_tsconfigs, type_resolve};
@@ -37,12 +38,15 @@ impl TsConfigModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for TsConfigModuleAsset {
+impl Module for TsConfigModuleAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident()
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for TsConfigModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()

@@ -13,9 +13,9 @@ use turbo_tasks_bytes::{Bytes, Stream};
 use turbo_tasks_env::ProcessEnvVc;
 use turbo_tasks_fs::FileSystemPathVc;
 use turbopack_core::{
-    asset::Asset,
     chunk::{ChunkingContextVc, EvaluatableAssetVc, EvaluatableAssetsVc},
     error::PrettyPrintError,
+    module::Module,
 };
 use turbopack_dev_server::source::{Body, BodyVc, ProxyResult, ProxyResultVc};
 

@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use turbo_tasks::{primitives::StringVc, trace::TraceRawVcs, Value, ValueToString};
 use turbo_tasks_fs::rope::Rope;
 use turbopack_core::{
-    asset::AssetVc,
     chunk::{
         availability_info::AvailabilityInfo, available_assets::AvailableAssetsVc, ChunkItem,
         ChunkItemVc, ChunkableModuleVc, ChunkingContext, ChunkingContextVc, FromChunkableModule,
@@ -14,6 +13,7 @@ use turbopack_core::{
     code_builder::{CodeBuilder, CodeVc},
     error::PrettyPrintError,
     issue::{code_gen::CodeGenerationIssue, IssueSeverity},
+    module::ModuleVc,
 };
 
 use super::{
@@ -198,8 +198,8 @@ impl EcmascriptChunkItemVc {
 
 #[async_trait::async_trait]
 impl FromChunkableModule for EcmascriptChunkItemVc {
-    async fn from_asset(context: ChunkingContextVc, asset: AssetVc) -> Result<Option<Self>> {
-        let Some(placeable) = EcmascriptChunkPlaceableVc::resolve_from(asset).await? else {
+    async fn from_asset(context: ChunkingContextVc, module: ModuleVc) -> Result<Option<Self>> {
+        let Some(placeable) = EcmascriptChunkPlaceableVc::resolve_from(module).await? else {
             return Ok(None);
         };
 
@@ -212,7 +212,7 @@ impl FromChunkableModule for EcmascriptChunkItemVc {
 
     async fn from_async_asset(
         context: ChunkingContextVc,
-        asset: ChunkableModuleVc,
+        module: ChunkableModuleVc,
         availability_info: Value<AvailabilityInfo>,
     ) -> Result<Option<Self>> {
         let Some(context) = EcmascriptChunkingContextVc::resolve_from(context).await? else {
@@ -225,19 +225,19 @@ impl FromChunkableModule for EcmascriptChunkItemVc {
                 current_availability_root,
             } => AvailabilityInfo::Inner {
                 available_assets: AvailableAssetsVc::new(vec![current_availability_root]),
-                current_availability_root: asset.as_asset(),
+                current_availability_root: module.into(),
             },
             AvailabilityInfo::Inner {
                 available_assets,
                 current_availability_root,
             } => AvailabilityInfo::Inner {
                 available_assets: available_assets.with_roots(vec![current_availability_root]),
-                current_availability_root: asset.as_asset(),
+                current_availability_root: module.into(),
             },
         };
 
         let manifest_asset =
-            ManifestChunkAssetVc::new(asset, context, Value::new(next_availability_info));
+            ManifestChunkAssetVc::new(module, context, Value::new(next_availability_info));
         Ok(Some(ManifestLoaderItemVc::new(manifest_asset).into()))
     }
 }

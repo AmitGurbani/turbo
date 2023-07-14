@@ -75,6 +75,11 @@ impl SingleItemCssChunkVc {
 #[turbo_tasks::value_impl]
 impl Chunk for SingleItemCssChunk {
     #[turbo_tasks::function]
+    fn ident(self_vc: SingleItemCssChunkVc) -> AssetIdentVc {
+        self_vc.as_output_asset().ident()
+    }
+
+    #[turbo_tasks::function]
     fn chunking_context(&self) -> ChunkingContextVc {
         self.context
     }
@@ -86,10 +91,7 @@ fn single_item_modifier() -> StringVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for SingleItemCssChunk {}
-
-#[turbo_tasks::value_impl]
-impl Asset for SingleItemCssChunk {
+impl OutputAsset for SingleItemCssChunk {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         Ok(AssetIdentVc::from_path(
@@ -101,7 +103,10 @@ impl Asset for SingleItemCssChunk {
             ),
         ))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for SingleItemCssChunk {
     #[turbo_tasks::function]
     async fn content(self_vc: SingleItemCssChunkVc) -> Result<AssetContentVc> {
         let code = self_vc.code().await?;

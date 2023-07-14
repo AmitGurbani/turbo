@@ -110,15 +110,15 @@ struct PostCssTransformedAsset {
 }
 
 #[turbo_tasks::value_impl]
-impl Source for PostCssTransformedAsset {}
-
-#[turbo_tasks::value_impl]
-impl Asset for PostCssTransformedAsset {
+impl Source for PostCssTransformedAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident()
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for PostCssTransformedAsset {
     #[turbo_tasks::function]
     async fn content(self_vc: PostCssTransformedAssetVc) -> Result<AssetContentVc> {
         let this = self_vc.await?;

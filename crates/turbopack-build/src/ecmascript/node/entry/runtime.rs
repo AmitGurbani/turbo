@@ -90,10 +90,7 @@ impl ValueToString for EcmascriptBuildNodeRuntimeChunk {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for EcmascriptBuildNodeRuntimeChunk {}
-
-#[turbo_tasks::value_impl]
-impl Asset for EcmascriptBuildNodeRuntimeChunk {
+impl OutputAsset for EcmascriptBuildNodeRuntimeChunk {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         let ident = AssetIdentVc::from_path(
@@ -104,7 +101,10 @@ impl Asset for EcmascriptBuildNodeRuntimeChunk {
 
         AssetIdentVc::from_path(self.chunking_context.chunk_path(ident, ".js"))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for EcmascriptBuildNodeRuntimeChunk {
     #[turbo_tasks::function]
     async fn references(self_vc: EcmascriptBuildNodeRuntimeChunkVc) -> Result<AssetReferencesVc> {
         let this = self_vc.await?;

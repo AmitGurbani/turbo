@@ -24,7 +24,6 @@ use turbopack::{
     ModuleAssetContextVc,
 };
 use turbopack_core::{
-    asset::Asset,
     chunk::{EvaluatableAssetVc, EvaluatableAssetsVc},
     compile_time_defines,
     compile_time_info::CompileTimeInfo,
@@ -34,6 +33,7 @@ use turbopack_core::{
     issue::IssueVc,
     module::ModuleVc,
     reference_type::{EntryReferenceSubType, ReferenceType},
+    source::Source,
 };
 use turbopack_dev::DevChunkingContextVc;
 use turbopack_node::evaluate::evaluate;

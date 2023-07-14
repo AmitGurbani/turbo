@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
 use anyhow::Result;
-use turbopack_core::{asset::AssetVc, reference::all_referenced_assets};
+use turbopack_core::{output::OutputAssetVc, reference::all_referenced_output_assets};
 
 #[turbo_tasks::value(shared)]
 pub enum AggregatedGraph {
-    Leaf(AssetVc),
+    Leaf(OutputAssetVc),
     Node {
         depth: usize,
         content: HashSet<AggregatedGraphVc>,
@@ -16,7 +16,7 @@ pub enum AggregatedGraph {
 #[turbo_tasks::value_impl]
 impl AggregatedGraphVc {
     #[turbo_tasks::function]
-    fn leaf(asset: AssetVc) -> Self {
+    fn leaf(asset: OutputAssetVc) -> Self {
         Self::cell(AggregatedGraph::Leaf(asset))
     }
 }
@@ -47,7 +47,7 @@ impl AggregatedGraphVc {
         Ok(match *self.await? {
             AggregatedGraph::Leaf(asset) => {
                 let mut refs = HashSet::new();
-                for reference in all_referenced_assets(asset).await?.iter() {
+                for reference in all_referenced_output_assets(asset).await?.iter() {
                     let reference = reference.resolve().await?;
                     if asset != reference {
                         refs.insert(AggregatedGraphVc::leaf(reference));
@@ -74,7 +74,7 @@ impl AggregatedGraphVc {
     async fn cost(self) -> Result<AggregationCostVc> {
         Ok(match *self.await? {
             AggregatedGraph::Leaf(asset) => {
-                AggregationCost(all_referenced_assets(asset).await?.len()).into()
+                AggregationCost(all_referenced_output_assets(asset).await?.len()).into()
             }
             AggregatedGraph::Node { ref references, .. } => {
                 AggregationCost(references.len()).into()
@@ -115,7 +115,7 @@ impl AggregatedGraphVc {
 }
 
 #[turbo_tasks::function]
-pub async fn aggregate(asset: AssetVc) -> Result<AggregatedGraphVc> {
+pub async fn aggregate(asset: OutputAssetVc) -> Result<AggregatedGraphVc> {
     let mut current = AggregatedGraphVc::leaf(asset);
     loop {
         if current.references().await?.set.is_empty() {
@@ -188,7 +188,7 @@ struct AggregatedGraphsSet {
 
 #[turbo_tasks::value(shared)]
 pub enum AggregatedGraphNodeContent {
-    Asset(AssetVc),
+    Asset(OutputAssetVc),
     Children(HashSet<AggregatedGraphVc>),
 }
 

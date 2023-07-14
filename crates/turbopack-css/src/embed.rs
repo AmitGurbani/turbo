@@ -2,6 +2,7 @@ use turbopack_core::{
     asset::{Asset, AssetVc},
     chunk::{ChunkableModule, ChunkableModuleVc, ChunkingContextVc},
     module::{Module, ModuleVc},
+    output::OutputAssetVc,
     reference::AssetReferencesVc,
 };
 
@@ -17,5 +18,5 @@ pub trait CssEmbed {
     /// TODO(alexkirsz) This should have a default impl that returns empty
     /// references.
     fn references(&self) -> AssetReferencesVc;
-    fn embeddable_asset(&self) -> AssetVc;
+    fn embeddable_asset(&self) -> OutputAssetVc;
 }

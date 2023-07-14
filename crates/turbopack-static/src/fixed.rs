@@ -28,15 +28,15 @@ impl FixedStaticAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for FixedStaticAsset {}
-
-#[turbo_tasks::value_impl]
-impl Asset for FixedStaticAsset {
+impl OutputAsset for FixedStaticAsset {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         Ok(AssetIdentVc::from_path(self.output_path))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for FixedStaticAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()

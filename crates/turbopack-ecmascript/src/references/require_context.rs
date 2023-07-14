@@ -34,7 +34,7 @@ use turbopack_core::{
         parse::RequestVc,
         ResolveResult, ResolveResultVc,
     },
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 use crate::{
@@ -354,14 +354,17 @@ fn modifier(dir: String, include_subdirs: bool) -> StringVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for RequireContextAsset {
+impl Module for RequireContextAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source
             .ident()
             .with_modifier(modifier(self.dir.clone(), self.include_subdirs))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for RequireContextAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         unimplemented!()
@@ -378,9 +381,6 @@ impl Asset for RequireContextAsset {
         ))
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for RequireContextAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for RequireContextAsset {

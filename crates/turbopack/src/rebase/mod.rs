@@ -6,15 +6,18 @@ use turbo_tasks_fs::FileSystemPathVc;
 use turbopack_core::{
     asset::{Asset, AssetContentVc, AssetVc},
     ident::AssetIdentVc,
+    module::{convert_asset_to_module, Module, ModuleVc},
     output::{OutputAsset, OutputAssetVc},
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
     resolve::ResolveResultVc,
 };
 
+/// Converts a [Module] graph into an [OutputAsset] graph by placing it into a
+/// different directory.
 #[turbo_tasks::value]
 #[derive(Hash)]
 pub struct RebasedAsset {
-    source: AssetVc,
+    source: ModuleVc,
     input_dir: FileSystemPathVc,
     output_dir: FileSystemPathVc,
 }
@@ -22,7 +25,11 @@ pub struct RebasedAsset {
 #[turbo_tasks::value_impl]
 impl RebasedAssetVc {
     #[turbo_tasks::function]
-    pub fn new(source: AssetVc, input_dir: FileSystemPathVc, output_dir: FileSystemPathVc) -> Self {
+    pub fn new(
+        source: ModuleVc,
+        input_dir: FileSystemPathVc,
+        output_dir: FileSystemPathVc,
+    ) -> Self {
         Self::cell(RebasedAsset {
             source,
             input_dir,
@@ -32,10 +39,7 @@ impl RebasedAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for RebasedAsset {}
-
-#[turbo_tasks::value_impl]
-impl Asset for RebasedAsset {
+impl OutputAsset for RebasedAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         AssetIdentVc::from_path(FileSystemPathVc::rebase(
@@ -44,7 +48,10 @@ impl Asset for RebasedAsset {
             self.output_dir,
         ))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for RebasedAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
@@ -84,7 +91,8 @@ impl AssetReference for RebasedAssetReference {
         Ok(result
             .map(
                 |asset| {
-                    let asset = RebasedAssetVc::new(asset, self.input_dir, self.output_dir).into();
+                    let module = convert_asset_to_module(asset);
+                    let asset = RebasedAssetVc::new(module, self.input_dir, self.output_dir).into();
                     async move { Ok(asset) }
                 },
                 |reference| {

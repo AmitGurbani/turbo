@@ -5,6 +5,7 @@ use turbopack_core::{
     asset::Asset,
     chunk::{ChunkDataVc, ChunkItem, ChunkItemVc, ChunkingContext, ChunksDataVc},
     ident::AssetIdentVc,
+    module::Module,
     reference::AssetReferencesVc,
 };
 

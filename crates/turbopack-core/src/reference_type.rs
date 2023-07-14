@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 use indexmap::IndexMap;
 
-use crate::{asset::AssetVc, resolve::ModulePartVc};
+use crate::{module::ModuleVc, resolve::ModulePartVc};
 
 /// Named references to inner assets. Modules can used them to allow to
 /// per-module aliases of some requests to already created module assets.
 /// Name is usually in UPPER_CASE to make it clear that this is an inner asset.
 #[turbo_tasks::value(transparent)]
-pub struct InnerAssets(IndexMap<String, AssetVc>);
+pub struct InnerAssets(IndexMap<String, ModuleVc>);
 
 #[turbo_tasks::value_impl]
 impl InnerAssetsVc {

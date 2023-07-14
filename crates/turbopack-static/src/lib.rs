@@ -26,7 +26,7 @@ use turbopack_core::{
     module::{Module, ModuleVc},
     output::{OutputAsset, OutputAssetVc},
     reference::{AssetReferencesVc, SingleAssetReferenceVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 use turbopack_css::embed::{CssEmbed, CssEmbedVc, CssEmbeddable, CssEmbeddableVc};
 use turbopack_ecmascript::{
@@ -70,20 +70,20 @@ impl StaticModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for StaticModuleAsset {
+impl Module for StaticModuleAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for StaticModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for StaticModuleAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for StaticModuleAsset {
@@ -141,10 +141,7 @@ struct StaticAsset {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for StaticAsset {}
-
-#[turbo_tasks::value_impl]
-impl Asset for StaticAsset {
+impl OutputAsset for StaticAsset {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         let content = self.source.content();
@@ -163,7 +160,10 @@ impl Asset for StaticAsset {
             .asset_path(&content_hash_b16, self.source.ident());
         Ok(AssetIdentVc::from_path(asset_path))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for StaticAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
@@ -241,8 +241,8 @@ impl CssEmbed for StaticCssEmbed {
     }
 
     #[turbo_tasks::function]
-    fn embeddable_asset(&self) -> AssetVc {
-        self.static_asset.as_asset()
+    fn embeddable_asset(&self) -> OutputAssetVc {
+        self.static_asset.into()
     }
 }
 

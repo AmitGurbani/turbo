@@ -1,10 +1,9 @@
 use anyhow::Result;
 use turbo_tasks::{primitives::StringVc, ValueToString, ValueToStringVc};
 use turbopack_core::{
-    asset::Asset,
     reference::{AssetReference, AssetReferenceVc},
     resolve::{pattern::PatternVc, resolve_raw, ResolveResultVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 #[turbo_tasks::value]

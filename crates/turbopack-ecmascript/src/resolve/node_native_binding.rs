@@ -11,6 +11,7 @@ use turbo_tasks_fs::{
 use turbopack_core::{
     asset::{Asset, AssetContent, AssetVc},
     file_source::FileSourceVc,
+    module::{convert_asset_to_module, Module},
     reference::{AssetReference, AssetReferenceVc},
     resolve::{
         pattern::{Pattern, PatternVc},
@@ -101,6 +102,7 @@ pub async fn resolve_node_pre_gyp_files(
         .await?;
     let compile_target = compile_target.await?;
     if let Some(config_asset) = *config {
+        let config_asset = convert_asset_to_module(config_asset);
         if let AssetContent::File(file) = &*config_asset.content().await? {
             if let FileContent::Content(ref config_file) = &*file.await? {
                 let config_file_path = config_asset.ident().path();

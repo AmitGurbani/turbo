@@ -30,7 +30,7 @@ use turbopack_core::{
     asset::{Asset, AssetContent},
     error::PrettyPrintError,
     issue::{Issue, IssueSeverity, IssueSeverityVc, IssueVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
     source_map::{GenerateSourceMap, GenerateSourceMapVc, OptionSourceMapVc},
     SOURCE_MAP_ROOT_NAME,
 };

@@ -24,15 +24,15 @@ impl FileSourceVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Source for FileSource {}
-
-#[turbo_tasks::value_impl]
-impl Asset for FileSource {
+impl Source for FileSource {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         AssetIdentVc::from_path(self.path)
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for FileSource {
     #[turbo_tasks::function]
     async fn content(&self) -> Result<AssetContentVc> {
         let file_type = &*self.path.get_type().await?;

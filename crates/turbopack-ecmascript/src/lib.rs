@@ -55,7 +55,7 @@ use turbo_tasks::{
 };
 use turbo_tasks_fs::{rope::Rope, FileSystemPathVc};
 use turbopack_core::{
-    asset::{Asset, AssetContentVc, AssetOptionVc, AssetVc},
+    asset::{Asset, AssetContentVc, AssetVc},
     chunk::{
         availability_info::AvailabilityInfo, ChunkItem, ChunkItemVc, ChunkVc, ChunkableModule,
         ChunkableModuleVc, ChunkingContextVc, EvaluatableAsset, EvaluatableAssetVc,
@@ -63,7 +63,7 @@ use turbopack_core::{
     compile_time_info::CompileTimeInfoVc,
     context::AssetContextVc,
     ident::AssetIdentVc,
-    module::{Module, ModuleVc},
+    module::{Module, ModuleVc, OptionModuleVc},
     reference::{AssetReferencesReadRef, AssetReferencesVc},
     reference_type::InnerAssetsVc,
     resolve::{
@@ -71,7 +71,7 @@ use turbopack_core::{
         parse::RequestVc,
         ModulePartVc,
     },
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 pub use self::references::AnalyzeEcmascriptModuleResultVc;
@@ -386,7 +386,7 @@ impl EcmascriptModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for EcmascriptModuleAsset {
+impl Module for EcmascriptModuleAsset {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         if let Some(inner_assets) = self.inner_assets {
@@ -400,7 +400,10 @@ impl Asset for EcmascriptModuleAsset {
             Ok(self.source.ident().with_modifier(modifier()))
         }
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for EcmascriptModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
@@ -411,9 +414,6 @@ impl Asset for EcmascriptModuleAsset {
         Ok(self_vc.failsafe_analyze().await?.references)
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for EcmascriptModuleAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for EcmascriptModuleAsset {
@@ -468,8 +468,8 @@ impl ResolveOrigin for EcmascriptModuleAsset {
     }
 
     #[turbo_tasks::function]
-    async fn get_inner_asset(&self, request: RequestVc) -> Result<AssetOptionVc> {
-        Ok(AssetOptionVc::cell(
+    async fn get_inner_asset(&self, request: RequestVc) -> Result<OptionModuleVc> {
+        Ok(OptionModuleVc::cell(
             if let Some(inner_assets) = &self.inner_assets {
                 if let Some(request) = request.await?.request() {
                     inner_assets.await?.get(&request).copied()

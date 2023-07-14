@@ -8,14 +8,14 @@ use turbo_tasks_fs::{
     FileSystemVc,
 };
 use turbopack_core::{
-    asset::{Asset, AssetVc},
+    asset::AssetVc,
     file_source::FileSourceVc,
     reference::{AssetReference, AssetReferenceVc},
     resolve::{
         pattern::{Pattern, PatternVc},
         ResolveResult, ResolveResultVc,
     },
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 #[turbo_tasks::value]

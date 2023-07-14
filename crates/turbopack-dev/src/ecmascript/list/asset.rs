@@ -3,7 +3,7 @@ use serde::Serialize;
 use turbo_tasks::{primitives::StringVc, Value, ValueToString, ValueToStringVc};
 use turbopack_core::{
     asset::{Asset, AssetContentVc, AssetVc},
-    chunk::{ChunkVc, ChunkingContext},
+    chunk::{Chunk, ChunkVc, ChunkingContext},
     ident::AssetIdentVc,
     output::{OutputAsset, OutputAssetVc, OutputAssetsVc},
     reference::{AssetReferencesVc, SingleAssetReferenceVc},
@@ -76,10 +76,7 @@ fn chunk_list_chunk_reference_description() -> StringVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for EcmascriptDevChunkList {}
-
-#[turbo_tasks::value_impl]
-impl Asset for EcmascriptDevChunkList {
+impl OutputAsset for EcmascriptDevChunkList {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         let mut ident = self.entry_chunk.ident().await?.clone_value();
@@ -95,7 +92,10 @@ impl Asset for EcmascriptDevChunkList {
             self.chunking_context.chunk_path(ident, ".js"),
         ))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for EcmascriptDevChunkList {
     #[turbo_tasks::function]
     async fn references(&self) -> Result<AssetReferencesVc> {
         Ok(AssetReferencesVc::cell(

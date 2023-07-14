@@ -19,7 +19,7 @@ use turbo_tasks::ValueToString;
 use turbo_tasks_fs::{FileContent, FileSystemPath};
 use turbopack_core::{
     asset::{Asset, AssetContent},
-    source::SourceVc,
+    source::{Source, SourceVc},
     source_map::{GenerateSourceMap, GenerateSourceMapVc, OptionSourceMapVc},
     SOURCE_MAP_ROOT_NAME,
 };

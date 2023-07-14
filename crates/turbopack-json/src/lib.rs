@@ -21,7 +21,7 @@ use turbopack_core::{
     ident::AssetIdentVc,
     module::{Module, ModuleVc},
     reference::AssetReferencesVc,
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 use turbopack_ecmascript::chunk::{
     EcmascriptChunkItem, EcmascriptChunkItemContent, EcmascriptChunkItemContentVc,
@@ -48,20 +48,20 @@ impl JsonModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for JsonModuleAsset {
+impl Module for JsonModuleAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for JsonModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for JsonModuleAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for JsonModuleAsset {

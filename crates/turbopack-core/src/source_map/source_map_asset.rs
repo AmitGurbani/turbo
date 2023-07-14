@@ -16,22 +16,19 @@ use crate::{
 /// Represents the source map of an ecmascript asset.
 #[turbo_tasks::value]
 pub struct SourceMapAsset {
-    asset: AssetVc,
+    asset: OutputAssetVc,
 }
 
 #[turbo_tasks::value_impl]
 impl SourceMapAssetVc {
     #[turbo_tasks::function]
-    pub fn new(asset: AssetVc) -> Self {
+    pub fn new(asset: OutputAssetVc) -> Self {
         SourceMapAsset { asset }.cell()
     }
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for SourceMapAsset {}
-
-#[turbo_tasks::value_impl]
-impl Asset for SourceMapAsset {
+impl OutputAsset for SourceMapAsset {
     #[turbo_tasks::function]
     async fn ident(&self) -> Result<AssetIdentVc> {
         // NOTE(alexkirsz) We used to include the asset's version id in the path,
@@ -40,7 +37,10 @@ impl Asset for SourceMapAsset {
             self.asset.ident().path().append(".map"),
         ))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for SourceMapAsset {
     #[turbo_tasks::function]
     async fn content(&self) -> Result<AssetContentVc> {
         let Some(generate_source_map) = GenerateSourceMapVc::resolve_from(&self.asset).await?
@@ -98,13 +98,13 @@ impl Introspectable for SourceMapAsset {
 /// server/build system of the presence of the source map
 #[turbo_tasks::value]
 pub struct SourceMapAssetReference {
-    asset: AssetVc,
+    asset: OutputAssetVc,
 }
 
 #[turbo_tasks::value_impl]
 impl SourceMapAssetReferenceVc {
     #[turbo_tasks::function]
-    pub fn new(asset: AssetVc) -> Self {
+    pub fn new(asset: OutputAssetVc) -> Self {
         SourceMapAssetReference { asset }.cell()
     }
 }

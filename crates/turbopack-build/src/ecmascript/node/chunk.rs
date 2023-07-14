@@ -3,7 +3,7 @@ use indexmap::IndexSet;
 use turbo_tasks::{primitives::StringVc, ValueToString, ValueToStringVc};
 use turbopack_core::{
     asset::{Asset, AssetContentVc, AssetVc},
-    chunk::ChunkingContext,
+    chunk::{Chunk, ChunkingContext},
     ident::AssetIdentVc,
     introspect::{Introspectable, IntrospectableChildrenVc, IntrospectableVc},
     output::{OutputAsset, OutputAssetVc},
@@ -64,16 +64,16 @@ impl EcmascriptBuildNodeChunkVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for EcmascriptBuildNodeChunk {}
-
-#[turbo_tasks::value_impl]
-impl Asset for EcmascriptBuildNodeChunk {
+impl OutputAsset for EcmascriptBuildNodeChunk {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         let ident = self.chunk.ident().with_modifier(modifier());
         AssetIdentVc::from_path(self.chunking_context.chunk_path(ident, ".js"))
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for EcmascriptBuildNodeChunk {
     #[turbo_tasks::function]
     async fn references(self_vc: EcmascriptBuildNodeChunkVc) -> Result<AssetReferencesVc> {
         let this = self_vc.await?;

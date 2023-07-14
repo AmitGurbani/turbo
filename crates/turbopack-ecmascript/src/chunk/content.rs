@@ -107,18 +107,18 @@ async fn ecmascript_chunk_content_single_entry(
     entry: EcmascriptChunkPlaceableVc,
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<EcmascriptChunkContentVc> {
-    let asset = entry.as_asset();
+    let module = entry.as_module();
 
     Ok(EcmascriptChunkContentVc::cell(
         if let Some(res) =
-            chunk_content::<EcmascriptChunkItemVc>(context.into(), asset, None, availability_info)
+            chunk_content::<EcmascriptChunkItemVc>(context.into(), module, None, availability_info)
                 .await?
         {
             res
         } else {
             chunk_content_split::<EcmascriptChunkItemVc>(
                 context.into(),
-                asset,
+                module,
                 None,
                 availability_info,
             )

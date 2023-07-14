@@ -50,10 +50,10 @@ use turbo_tasks::{
 };
 use turbo_tasks_fs::{FileJsonContent, FileSystemPathVc};
 use turbopack_core::{
-    asset::Asset,
     compile_time_info::{CompileTimeInfoVc, FreeVarReference},
     error::PrettyPrintError,
     issue::{IssueSourceVc, OptionIssueSourceVc},
+    module::{Module, ModuleVc},
     reference::{AssetReferenceVc, AssetReferencesVc, SourceMapReferenceVc},
     reference_type::{CommonJsReferenceSubType, ReferenceType},
     resolve::{
@@ -64,7 +64,7 @@ use turbopack_core::{
         pattern::Pattern,
         resolve, FindContextFileResult, ModulePartVc, PrimaryResolveResult,
     },
-    source::{asset_to_source, SourceVc},
+    source::{asset_to_source, Source, SourceVc},
 };
 use turbopack_swc_utils::emitter::IssueEmitter;
 use unreachable::UnreachableVc;
@@ -1749,7 +1749,7 @@ async fn handle_free_var_reference(
 }
 
 fn issue_source(source: SourceVc, span: Span) -> IssueSourceVc {
-    IssueSourceVc::from_byte_offset(source.into(), span.lo.to_usize(), span.hi.to_usize())
+    IssueSourceVc::from_byte_offset(source, span.lo.to_usize(), span.hi.to_usize())
 }
 
 fn analyze_amd_define(
@@ -2082,7 +2082,11 @@ async fn require_resolve_visitor(
             .iter()
             .map(|result| async move {
                 Ok(if let PrimaryResolveResult::Asset(asset) = result {
-                    Some(require_resolve(asset.ident().path()).await?)
+                    if let Some(module) = ModuleVc::resolve_from(asset).await? {
+                        Some(require_resolve(module.ident().path()).await?)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 })

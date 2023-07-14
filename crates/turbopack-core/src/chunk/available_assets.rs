@@ -11,7 +11,8 @@ use turbo_tasks_hash::Xxh3Hash64Hasher;
 
 use super::{ChunkableModuleReference, ChunkableModuleReferenceVc, ChunkingType};
 use crate::{
-    asset::{Asset, AssetVc, AssetsSetVc},
+    asset::Asset,
+    module::{Module, ModuleVc, ModulesSetVc},
     reference::AssetReference,
 };
 
@@ -21,23 +22,23 @@ use crate::{
 #[turbo_tasks::value]
 pub struct AvailableAssets {
     parent: Option<AvailableAssetsVc>,
-    roots: Vec<AssetVc>,
+    roots: Vec<ModuleVc>,
 }
 
 #[turbo_tasks::value_impl]
 impl AvailableAssetsVc {
     #[turbo_tasks::function]
-    fn new_normalized(parent: Option<AvailableAssetsVc>, roots: Vec<AssetVc>) -> Self {
+    fn new_normalized(parent: Option<AvailableAssetsVc>, roots: Vec<ModuleVc>) -> Self {
         AvailableAssets { parent, roots }.cell()
     }
 
     #[turbo_tasks::function]
-    pub fn new(roots: Vec<AssetVc>) -> Self {
+    pub fn new(roots: Vec<ModuleVc>) -> Self {
         Self::new_normalized(None, roots)
     }
 
     #[turbo_tasks::function]
-    pub async fn with_roots(self, roots: Vec<AssetVc>) -> Result<Self> {
+    pub async fn with_roots(self, roots: Vec<ModuleVc>) -> Result<Self> {
         let roots = roots
             .into_iter()
             .map(|root| async move { Ok((self.includes(root).await?, root)) })
@@ -65,7 +66,7 @@ impl AvailableAssetsVc {
     }
 
     #[turbo_tasks::function]
-    pub async fn includes(self, asset: AssetVc) -> Result<BoolVc> {
+    pub async fn includes(self, asset: ModuleVc) -> Result<BoolVc> {
         let this = self.await?;
         if let Some(parent) = this.parent {
             if *parent.includes(asset).await? {
@@ -82,49 +83,54 @@ impl AvailableAssetsVc {
 }
 
 #[turbo_tasks::function]
-async fn chunkable_assets_set(root: AssetVc) -> Result<AssetsSetVc> {
-    let assets = AdjacencyMap::new()
-        .skip_duplicates()
-        .visit(once(root), |&asset: &AssetVc| async move {
-            Ok(asset
-                .references()
-                .await?
-                .iter()
-                .copied()
-                .map(|reference| async move {
-                    if let Some(chunkable) =
-                        ChunkableModuleReferenceVc::resolve_from(reference).await?
-                    {
-                        if matches!(
-                            &*chunkable.chunking_type().await?,
-                            Some(
-                                ChunkingType::Parallel
-                                    | ChunkingType::PlacedOrParallel
-                                    | ChunkingType::Placed
-                            )
-                        ) {
-                            return chunkable
-                                .resolve_reference()
-                                .primary_assets()
-                                .await?
-                                .iter()
-                                .copied()
-                                .map(|asset| asset.resolve())
-                                .try_join()
-                                .await;
+async fn chunkable_assets_set(root: ModuleVc) -> Result<ModulesSetVc> {
+    let assets =
+        AdjacencyMap::new()
+            .skip_duplicates()
+            .visit(once(root), |&asset: &ModuleVc| async move {
+                Ok(asset
+                    .references()
+                    .await?
+                    .iter()
+                    .copied()
+                    .map(|reference| async move {
+                        if let Some(chunkable) =
+                            ChunkableModuleReferenceVc::resolve_from(reference).await?
+                        {
+                            if matches!(
+                                &*chunkable.chunking_type().await?,
+                                Some(
+                                    ChunkingType::Parallel
+                                        | ChunkingType::PlacedOrParallel
+                                        | ChunkingType::Placed
+                                )
+                            ) {
+                                return Ok(chunkable
+                                    .resolve_reference()
+                                    .primary_assets()
+                                    .await?
+                                    .iter()
+                                    .map(|&asset| async move {
+                                        Ok(ModuleVc::resolve_from(asset).await?)
+                                    })
+                                    .try_join()
+                                    .await?
+                                    .into_iter()
+                                    .flatten()
+                                    .collect());
+                            }
                         }
-                    }
-                    Ok(Vec::new())
-                })
-                .try_join()
-                .await?
-                .into_iter()
-                .flatten()
-                .collect::<IndexSet<_>>())
-        })
-        .await
-        .completed()?;
-    Ok(AssetsSetVc::cell(
+                        Ok(Vec::new())
+                    })
+                    .try_join()
+                    .await?
+                    .into_iter()
+                    .flatten()
+                    .collect::<IndexSet<_>>())
+            })
+            .await
+            .completed()?;
+    Ok(ModulesSetVc::cell(
         assets.into_inner().into_reverse_topological().collect(),
     ))
 }

@@ -6,9 +6,9 @@ use serde::Serialize;
 use turbo_tasks::{IntoTraitRef, TryJoinIterExt};
 use turbo_tasks_fs::rope::Rope;
 use turbopack_core::{
-    asset::Asset,
     chunk::{ChunkingContext, ModuleId, ModuleIdReadRef},
     code_builder::CodeReadRef,
+    output::OutputAsset,
     version::{PartialUpdate, TotalUpdate, Update, VersionVc},
 };
 

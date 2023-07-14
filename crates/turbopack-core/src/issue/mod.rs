@@ -24,7 +24,8 @@ use turbo_tasks_fs::{
 use turbo_tasks_hash::{DeterministicHash, Xxh3Hash64Hasher};
 
 use crate::{
-    asset::{Asset, AssetContent, AssetVc},
+    asset::{Asset, AssetContent},
+    source::{Source, SourceVc},
     source_pos::SourcePos,
 };
 
@@ -426,7 +427,7 @@ impl CapturedIssues {
 #[turbo_tasks::value]
 #[derive(Clone)]
 pub struct IssueSource {
-    pub source: AssetVc,
+    pub source: SourceVc,
     pub start: SourcePos,
     pub end: SourcePos,
 }
@@ -434,7 +435,7 @@ pub struct IssueSource {
 #[turbo_tasks::value_impl]
 impl IssueSourceVc {
     #[turbo_tasks::function]
-    pub async fn from_byte_offset(source: AssetVc, start: usize, end: usize) -> Result<Self> {
+    pub async fn from_byte_offset(source: SourceVc, start: usize, end: usize) -> Result<Self> {
         fn find_line_and_column(lines: &[FileLine], offset: usize) -> SourcePos {
             match lines.binary_search_by(|line| line.bytes_offset.cmp(&offset)) {
                 Ok(i) => SourcePos { line: i, column: 0 },
@@ -609,7 +610,7 @@ impl IssueVc {
 #[turbo_tasks::value(serialization = "none")]
 #[derive(Clone, Debug)]
 pub struct PlainIssueSource {
-    pub asset: PlainAssetReadRef,
+    pub asset: PlainSourceReadRef,
     pub start: SourcePos,
     pub end: SourcePos,
 }
@@ -620,7 +621,7 @@ impl IssueSourceVc {
     pub async fn into_plain(self) -> Result<PlainIssueSourceVc> {
         let this = self.await?;
         Ok(PlainIssueSource {
-            asset: PlainAssetVc::from_asset(this.source).await?,
+            asset: PlainSourceVc::from_source(this.source).await?,
             start: this.start,
             end: this.end,
         }
@@ -630,23 +631,23 @@ impl IssueSourceVc {
 
 #[turbo_tasks::value(serialization = "none")]
 #[derive(Clone, Debug)]
-pub struct PlainAsset {
+pub struct PlainSource {
     pub ident: StringReadRef,
     #[turbo_tasks(debug_ignore)]
     pub content: FileContentReadRef,
 }
 
 #[turbo_tasks::value_impl]
-impl PlainAssetVc {
+impl PlainSourceVc {
     #[turbo_tasks::function]
-    pub async fn from_asset(asset: AssetVc) -> Result<PlainAssetVc> {
+    pub async fn from_source(asset: SourceVc) -> Result<PlainSourceVc> {
         let asset_content = asset.content().await?;
         let content = match *asset_content {
             AssetContent::File(file_content) => file_content.await?,
             AssetContent::Redirect { .. } => ReadRef::new(Arc::new(FileContent::NotFound)),
         };
 
-        Ok(PlainAsset {
+        Ok(PlainSource {
             ident: asset.ident().to_string().await?,
             content,
         }

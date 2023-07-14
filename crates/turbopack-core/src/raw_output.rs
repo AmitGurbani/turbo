@@ -2,7 +2,7 @@ use crate::{
     asset::{Asset, AssetContentVc, AssetVc},
     ident::AssetIdentVc,
     output::{OutputAsset, OutputAssetVc},
-    source::SourceVc,
+    source::{Source, SourceVc},
 };
 
 /// A module where source code doesn't need to be parsed but can be used as is.
@@ -13,15 +13,15 @@ pub struct RawOutput {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for RawOutput {}
-
-#[turbo_tasks::value_impl]
-impl Asset for RawOutput {
+impl OutputAsset for RawOutput {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident()
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for RawOutput {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()

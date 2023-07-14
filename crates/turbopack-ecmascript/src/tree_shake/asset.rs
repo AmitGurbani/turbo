@@ -47,6 +47,16 @@ impl EcmascriptModulePartAssetVc {
 }
 
 #[turbo_tasks::value_impl]
+impl Module for EcmascriptModulePartAsset {
+    #[turbo_tasks::function]
+    async fn ident(&self) -> Result<AssetIdentVc> {
+        let inner = self.full_module.ident();
+
+        Ok(inner.with_part(self.part))
+    }
+}
+
+#[turbo_tasks::value_impl]
 impl Asset for EcmascriptModulePartAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
@@ -99,13 +109,6 @@ impl Asset for EcmascriptModulePartAsset {
 
         Ok(AssetReferencesVc::cell(assets))
     }
-
-    #[turbo_tasks::function]
-    async fn ident(&self) -> Result<AssetIdentVc> {
-        let inner = self.full_module.ident();
-
-        Ok(inner.with_part(self.part))
-    }
 }
 
 #[turbo_tasks::value_impl]
@@ -128,9 +131,6 @@ impl EcmascriptChunkPlaceable for EcmascriptModulePartAsset {
         Ok(self_vc.analyze().await?.exports)
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for EcmascriptModulePartAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for EcmascriptModulePartAsset {

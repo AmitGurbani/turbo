@@ -5,6 +5,7 @@ use turbopack_core::{
     asset::{Asset, AssetContentVc, AssetVc},
     file_source::FileSourceVc,
     ident::AssetIdentVc,
+    module::{Module, ModuleVc},
     reference::{AssetReference, AssetReferenceVc, AssetReferencesVc},
     reference_type::{CommonJsReferenceSubType, ReferenceType},
     resolve::{
@@ -12,7 +13,7 @@ use turbopack_core::{
         parse::RequestVc,
         resolve, ResolveResult, ResolveResultVc,
     },
-    source::{asset_to_source, SourceVc},
+    source::{asset_to_source, Source, SourceVc},
 };
 
 use self::{
@@ -54,12 +55,15 @@ impl WebpackModuleAssetVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for WebpackModuleAsset {
+impl Module for WebpackModuleAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.source.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for WebpackModuleAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         self.source.content()

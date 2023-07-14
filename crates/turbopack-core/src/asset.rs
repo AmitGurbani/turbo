@@ -7,7 +7,6 @@ use turbo_tasks_fs::{
 };
 
 use crate::{
-    ident::AssetIdentVc,
     reference::AssetReferencesVc,
     version::{VersionedAssetContentVc, VersionedContentVc},
 };
@@ -33,10 +32,6 @@ impl AssetsVc {
 /// An asset. It also forms a graph when following [Asset::references].
 #[turbo_tasks::value_trait]
 pub trait Asset {
-    /// The identifier of the [Asset]. It's expected to be unique and capture
-    /// all properties of the [Asset].
-    fn ident(&self) -> AssetIdentVc;
-
     /// The content of the [Asset].
     fn content(&self) -> AssetContentVc;
 

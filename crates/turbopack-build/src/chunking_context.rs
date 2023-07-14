@@ -7,13 +7,13 @@ use turbo_tasks::{
 };
 use turbo_tasks_fs::FileSystemPathVc;
 use turbopack_core::{
-    asset::{Asset, AssetVc},
     chunk::{
         Chunk, ChunkVc, ChunkableModule, ChunkingContext, ChunkingContextVc, ChunksVc,
         EvaluatableAssetsVc,
     },
     environment::EnvironmentVc,
     ident::AssetIdentVc,
+    module::{Module, ModuleVc},
     output::{OutputAssetVc, OutputAssetsVc},
 };
 use turbopack_css::chunk::CssChunkVc;
@@ -217,12 +217,12 @@ impl ChunkingContext for BuildChunkingContext {
     }
 
     #[turbo_tasks::function]
-    fn reference_chunk_source_maps(&self, _chunk: AssetVc) -> BoolVc {
+    fn reference_chunk_source_maps(&self, _chunk: OutputAssetVc) -> BoolVc {
         BoolVc::cell(true)
     }
 
     #[turbo_tasks::function]
-    async fn can_be_in_same_chunk(&self, asset_a: AssetVc, asset_b: AssetVc) -> Result<BoolVc> {
+    async fn can_be_in_same_chunk(&self, asset_a: ModuleVc, asset_b: ModuleVc) -> Result<BoolVc> {
         let parent_dir = asset_a.ident().path().parent().await?;
 
         let path = asset_b.ident().path().await?;

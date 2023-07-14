@@ -32,13 +32,12 @@ use turbopack::{
     resolve_options_context::ResolveOptionsContext, transition::TransitionsByNameVc,
     ModuleAssetContextVc,
 };
-#[cfg(not(feature = "bench_against_node_nft"))]
-use turbopack_core::asset::Asset;
 use turbopack_core::{
     compile_time_info::CompileTimeInfoVc,
     context::AssetContext,
     environment::{EnvironmentVc, ExecutionEnvironment, NodeJsEnvironment},
     file_source::FileSourceVc,
+    output::OutputAsset,
     reference_type::ReferenceType,
 };
 

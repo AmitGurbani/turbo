@@ -3,9 +3,8 @@ use turbo_tasks::{primitives::StringVc, TryJoinIterExt};
 use turbo_tasks_fs::FileSystemPathVc;
 
 use crate::{
-    asset::Asset,
     chunk::{ModuleIdReadRef, OutputChunk, OutputChunkRuntimeInfo, OutputChunkVc},
-    output::{OutputAssetVc, OutputAssetsVc},
+    output::{OutputAsset, OutputAssetVc, OutputAssetsVc},
     reference::{AssetReferencesVc, SingleAssetReferenceVc},
 };
 
@@ -96,7 +95,7 @@ impl ChunkDataVc {
                             (
                                 path.to_owned(),
                                 SingleAssetReferenceVc::new(
-                                    chunk,
+                                    chunk.into(),
                                     module_chunk_reference_description(),
                                 )
                                 .as_asset_reference(),

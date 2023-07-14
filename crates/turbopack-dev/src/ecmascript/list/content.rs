@@ -10,6 +10,7 @@ use turbopack_core::{
     asset::{Asset, AssetContentVc},
     chunk::ChunkingContext,
     code_builder::{CodeBuilder, CodeVc},
+    output::OutputAsset,
     version::{
         MergeableVersionedContent, MergeableVersionedContentVc, UpdateVc, VersionVc,
         VersionedContent, VersionedContentMerger, VersionedContentVc, VersionedContentsVc,

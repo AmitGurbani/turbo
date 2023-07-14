@@ -183,15 +183,15 @@ fn chunk_reference_description() -> StringVc {
 }
 
 #[turbo_tasks::value_impl]
-impl OutputAsset for EcmascriptBuildNodeEntryChunk {}
-
-#[turbo_tasks::value_impl]
-impl Asset for EcmascriptBuildNodeEntryChunk {
+impl OutputAsset for EcmascriptBuildNodeEntryChunk {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         AssetIdentVc::from_path(self.path)
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for EcmascriptBuildNodeEntryChunk {
     #[turbo_tasks::function]
     async fn references(self_vc: EcmascriptBuildNodeEntryChunkVc) -> Result<AssetReferencesVc> {
         let this = self_vc.await?;

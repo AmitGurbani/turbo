@@ -14,7 +14,7 @@ use turbopack_core::{
         Introspectable, IntrospectableChildrenVc, IntrospectableVc,
     },
     module::{Module, ModuleVc},
-    output::OutputAssetsVc,
+    output::{OutputAsset, OutputAssetsVc},
     reference::{AssetReferenceVc, AssetReferencesVc, SingleAssetReferenceVc},
 };
 
@@ -54,12 +54,15 @@ fn runtime_entry_description() -> StringVc {
 }
 
 #[turbo_tasks::value_impl]
-impl Asset for ChunkGroupFilesAsset {
+impl Module for ChunkGroupFilesAsset {
     #[turbo_tasks::function]
     fn ident(&self) -> AssetIdentVc {
         self.module.ident().with_modifier(modifier())
     }
+}
 
+#[turbo_tasks::value_impl]
+impl Asset for ChunkGroupFilesAsset {
     #[turbo_tasks::function]
     fn content(&self) -> AssetContentVc {
         AssetContentVc::from(File::from("// Chunking only content".to_string()))
@@ -81,9 +84,6 @@ impl Asset for ChunkGroupFilesAsset {
         Ok(AssetReferencesVc::cell(references))
     }
 }
-
-#[turbo_tasks::value_impl]
-impl Module for ChunkGroupFilesAsset {}
 
 #[turbo_tasks::value_impl]
 impl ChunkableModule for ChunkGroupFilesAsset {

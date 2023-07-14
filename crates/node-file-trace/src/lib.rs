@@ -41,13 +41,14 @@ use turbopack::{
 };
 use turbopack_cli_utils::issue::{ConsoleUiVc, IssueSeverityCliOption, LogOptions};
 use turbopack_core::{
-    asset::{Asset, AssetVc, AssetsVc},
     compile_time_info::CompileTimeInfo,
     context::{AssetContext, AssetContextVc},
     environment::{EnvironmentVc, ExecutionEnvironment, NodeJsEnvironment},
     file_source::FileSourceVc,
     issue::{IssueContextExt, IssueReporter, IssueSeverity, IssueVc},
-    reference::all_assets,
+    module::{Module, ModuleVc, ModulesVc},
+    output::OutputAsset,
+    reference::all_modules,
     resolve::options::{ImportMapping, ResolvedMap},
 };
 
@@ -208,7 +209,7 @@ async fn create_fs(name: &str, context: &str, watch: bool) -> Result<FileSystemV
 async fn add_glob_results(
     context: AssetContextVc,
     result: ReadGlobResultVc,
-    list: &mut Vec<AssetVc>,
+    list: &mut Vec<ModuleVc>,
 ) -> Result<()> {
     let result = result.await?;
     for entry in result.results.values() {
@@ -228,7 +229,7 @@ async fn add_glob_results(
         fn recurse<'a>(
             context: AssetContextVc,
             result: ReadGlobResultVc,
-            list: &'a mut Vec<AssetVc>,
+            list: &'a mut Vec<ModuleVc>,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
             Box::pin(add_glob_results(context, result, list))
         }
@@ -247,7 +248,7 @@ async fn input_to_modules<'a>(
     context: String,
     module_options: TransientInstance<ModuleOptionsContext>,
     resolve_options: TransientInstance<ResolveOptionsContext>,
-) -> Result<AssetsVc> {
+) -> Result<ModulesVc> {
     let root = fs.root();
     let process_cwd = process_cwd
         .clone()
@@ -260,20 +261,16 @@ async fn input_to_modules<'a>(
     for input in input.iter() {
         if exact {
             let source = FileSourceVc::new(root.join(input)).into();
-            list.push(
-                context
-                    .process(
-                        source,
-                        Value::new(turbopack_core::reference_type::ReferenceType::Undefined),
-                    )
-                    .into(),
-            );
+            list.push(context.process(
+                source,
+                Value::new(turbopack_core::reference_type::ReferenceType::Undefined),
+            ));
         } else {
             let glob = GlobVc::new(input);
             add_glob_results(context, root.read_glob(glob, false), &mut list).await?;
         };
     }
-    Ok(AssetsVc::cell(list))
+    Ok(ModulesVc::cell(list))
 }
 
 fn process_context(dir: &Path, context_directory: Option<&String>) -> Result<String> {
@@ -565,7 +562,7 @@ async fn main_operation(
             )
             .await?;
             for module in modules.iter() {
-                let set = all_assets(*module)
+                let set = all_modules(*module)
                     .issue_context(module.ident().path(), "gathering list of assets")
                     .await?;
                 for asset in set.await?.iter() {

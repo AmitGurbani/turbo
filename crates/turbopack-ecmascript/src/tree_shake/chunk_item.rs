@@ -4,6 +4,7 @@ use turbopack_core::{
     asset::Asset,
     chunk::{availability_info::AvailabilityInfo, ChunkItem, ChunkItemVc},
     ident::AssetIdentVc,
+    module::Module,
     reference::AssetReferencesVc,
 };
 

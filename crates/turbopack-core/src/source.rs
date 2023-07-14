@@ -1,11 +1,18 @@
 use anyhow::{Context, Result};
 
-use crate::asset::{Asset, AssetOptionVc, AssetVc};
+use crate::{
+    asset::{Asset, AssetOptionVc, AssetVc},
+    ident::AssetIdentVc,
+};
 
 /// (Unparsed) Source Code. Source Code is processed into [Module]s by the
 /// [AssetContext]. All [Source]s have content and an identifier.
 #[turbo_tasks::value_trait]
-pub trait Source: Asset {}
+pub trait Source: Asset {
+    /// The identifier of the [Source]. It's expected to be unique and capture
+    /// all properties of the [Source].
+    fn ident(&self) -> AssetIdentVc;
+}
 
 #[turbo_tasks::value(transparent)]
 pub struct OptionSource(Option<SourceVc>);
