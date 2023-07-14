@@ -279,7 +279,7 @@ async fn css_chunk_content_single_entry(
 impl Chunk for CssChunk {
     #[turbo_tasks::function]
     fn ident(self_vc: CssChunkVc) -> AssetIdentVc {
-        self_vc.as_chunk().ident()
+        self_vc.as_output_asset().ident()
     }
 
     #[turbo_tasks::function]
