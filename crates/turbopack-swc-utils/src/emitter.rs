@@ -42,7 +42,7 @@ impl Emitter for IssueEmitter {
 
         let source = db.span.primary_span().map(|span| {
             IssueSourceVc::from_byte_offset(
-                self.source.into(),
+                self.source,
                 self.source_map.lookup_byte_offset(span.lo()).pos.to_usize(),
                 self.source_map.lookup_byte_offset(span.lo()).pos.to_usize(),
             )
