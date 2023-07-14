@@ -170,12 +170,10 @@ async fn extra_configs(
 
 #[turbo_tasks::function]
 fn postcss_executor(context: AssetContextVc, postcss_config_path: FileSystemPathVc) -> ModuleVc {
-    let config_asset = context
-        .process(
-            FileSourceVc::new(postcss_config_path).into(),
-            Value::new(ReferenceType::Entry(EntryReferenceSubType::Undefined)),
-        )
-        .into();
+    let config_asset = context.process(
+        FileSourceVc::new(postcss_config_path).into(),
+        Value::new(ReferenceType::Entry(EntryReferenceSubType::Undefined)),
+    );
 
     context.process(
         VirtualSourceVc::new(
@@ -231,7 +229,7 @@ impl PostCssTransformedAssetVc {
         let css_path = css_fs_path.path.as_str();
 
         let config_value = evaluate(
-            postcss_executor.into(),
+            postcss_executor,
             project_path,
             env,
             this.source.ident(),

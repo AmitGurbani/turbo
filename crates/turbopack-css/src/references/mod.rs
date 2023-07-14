@@ -135,7 +135,7 @@ impl<'a> VisitAstPath for AssetReferencesVisitor<'a> {
                 AstPathVc::cell(as_parent_path(ast_path)),
                 ImportAttributes::new_from_prelude(i).into(),
                 IssueSourceVc::from_byte_offset(
-                    self.source.into(),
+                    self.source,
                     issue_span.lo.to_usize(),
                     issue_span.hi.to_usize(),
                 ),
@@ -165,7 +165,7 @@ impl<'a> VisitAstPath for AssetReferencesVisitor<'a> {
                     RequestVc::parse(Value::new(src.to_string().into())),
                     AstPathVc::cell(as_parent_path(ast_path)),
                     IssueSourceVc::from_byte_offset(
-                        self.source.into(),
+                        self.source,
                         issue_span.lo.to_usize(),
                         issue_span.hi.to_usize(),
                     ),

@@ -215,14 +215,10 @@ async fn add_glob_results(
     for entry in result.results.values() {
         if let DirectoryEntry::File(path) = entry {
             let source = FileSourceVc::new(*path).into();
-            list.push(
-                context
-                    .process(
-                        source,
-                        Value::new(turbopack_core::reference_type::ReferenceType::Undefined),
-                    )
-                    .into(),
-            );
+            list.push(context.process(
+                source,
+                Value::new(turbopack_core::reference_type::ReferenceType::Undefined),
+            ));
         }
     }
     for result in result.inner.values() {

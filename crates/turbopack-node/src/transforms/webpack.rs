@@ -158,7 +158,7 @@ impl WebpackLoadersProcessedAssetVc {
         let resource_path = resource_fs_path.path.as_str();
         let loaders = transform.loaders.await?;
         let config_value = evaluate(
-            webpack_loaders_executor.into(),
+            webpack_loaders_executor,
             project_path,
             env,
             this.source.ident(),

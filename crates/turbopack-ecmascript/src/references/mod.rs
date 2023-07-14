@@ -950,11 +950,7 @@ pub(crate) async fn analyze_ecmascript_module(
                     RequestVc::parse(Value::new(pat)),
                     compile_time_info.environment().rendering(),
                     AstPathVc::cell(ast_path),
-                    IssueSourceVc::from_byte_offset(
-                        source.into(),
-                        span.lo.to_usize(),
-                        span.hi.to_usize(),
-                    ),
+                    IssueSourceVc::from_byte_offset(source, span.lo.to_usize(), span.hi.to_usize()),
                     in_try,
                 ));
             }

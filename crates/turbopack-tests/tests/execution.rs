@@ -253,7 +253,7 @@ async fn run_test(resource: &str) -> Result<RunTestResultVc> {
     let test_asset = FileSourceVc::new(test_path);
 
     let res = evaluate(
-        jest_entry_asset.into(),
+        jest_entry_asset,
         chunk_root_path,
         CommandLineProcessEnvVc::new().into(),
         test_asset.ident(),
